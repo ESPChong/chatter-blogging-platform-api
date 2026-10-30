@@ -1,8 +1,11 @@
 import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import authRoutes from './routes/auth.routes';
+import postRoutes from './routes/post.routes';
 import { errorHandler } from './middlewares/errorHandler';
+import swaggerSpec from './config/swagger';
 
 dotenv.config();
 
@@ -29,6 +32,23 @@ app.get('/', (_req: Request, res: Response) => {
 
 // Auth Routes
 app.use('/api/auth', authRoutes);
+
+// Post Routes (includes nested comment endpoints)
+app.use('/api/posts', postRoutes);
+
+// Interactive API Documentation
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none; }',
+  }),
+);
+
+// JSON spec for importing into Postman/Insomnia
+app.get('/api-docs.json', (_req: Request, res: Response) => {
+  res.status(200).json(swaggerSpec);
+});
 
 app.use('/*splat', (_req: Request, res: Response) => {
   res.status(404).json({

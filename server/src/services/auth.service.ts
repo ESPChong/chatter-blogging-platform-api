@@ -1,13 +1,19 @@
-// Where the low level business logic lives
-// Methods to be implemented by the controller
-// Interacts with the database to obtain data
-// Does not use/handle Request and Response objects
-
 import prisma from '../config/prisma';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../helpers/jwt';
 import { AppError } from '../helpers/AppError';
 import type { RegisterInput } from '../schemas/auth.schema';
+
+const BCRYPT_SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS) || 12;
+
+// Fields that are safe to return to the client (never the password hash)
+const publicUserSelect = {
+  id: true,
+  email: true,
+  username: true,
+  role: true,
+  createdAt: true,
+} as const;
 
 export class AuthService {
   // Register new user
@@ -22,7 +28,10 @@ export class AuthService {
     }
 
     // Hash Password
-    const hashedPassword = await bcrypt.hash(userData.password, 12);
+    const hashedPassword = await bcrypt.hash(
+      userData.password,
+      BCRYPT_SALT_ROUNDS,
+    );
 
     // Create user in database
     const user = await prisma.user.create({
@@ -31,16 +40,11 @@ export class AuthService {
         password: hashedPassword,
         username: userData.username,
       },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        createdAt: true,
-      },
+      select: publicUserSelect,
     });
 
-    // Generate JWT Token
-    const token = generateToken({ userId: user.id });
+    // Generate JWT Token (role embedded for authorization checks)
+    const token = generateToken({ userId: user.id, role: user.role });
 
     return {
       user,
@@ -65,8 +69,8 @@ export class AuthService {
       throw new AppError('Invalid credentials', 401);
     }
 
-    // Generate JWT Token
-    const token = generateToken({ userId: user.id });
+    // Generate JWT Token (role embedded for authorization checks)
+    const token = generateToken({ userId: user.id, role: user.role });
 
     // returns and object consisting of a user object and a token
     return {
@@ -74,8 +78,23 @@ export class AuthService {
         id: user.id,
         email: user.email,
         username: user.username,
+        role: user.role,
       },
       token,
     };
+  }
+
+  // Fetch the authenticated user's profile (GET /api/auth/me)
+  async getUserById(userId: number) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: publicUserSelect,
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    return user;
   }
 }

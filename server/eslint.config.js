@@ -7,7 +7,7 @@ import globals from 'globals';
 export default [
   // 1. Ignore patterns (replaces ignorePatterns)
   {
-    ignores: ['dist', 'node_modules', 'build', '*.js', 'coverage', '**/generated/**'],
+    ignores: ['dist', 'node_modules', 'build', '*.js', '*.cjs', 'coverage', '**/generated/**'],
   },
 
   // 2. Base ESLint recommended rules

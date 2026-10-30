@@ -19,6 +19,7 @@ model User {
   username  String
   email     String    @unique         // All Users have unique emails
   password  String
+  role      String    @default("user")
   posts     Post[]        // User hasMany Posts
   comments  Comment[]     // User hasMany Comments
 }
