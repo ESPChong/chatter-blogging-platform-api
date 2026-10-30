@@ -47,6 +47,6 @@ model Comment {
 
 model Tag {
   id        Int       @id @default(autoincrement())
-  name      String
+  name      String    @unique
   post      Post[]    // Tag belongstomany Posts
 }
